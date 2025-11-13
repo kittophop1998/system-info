@@ -1,0 +1,87 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          
+      - name: Build Binary
+        run: |
+          cd cmd/server
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o system-i-binary -ldflags="-s -w" .
+          
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            TARGET_PATH=/opt/system_i
+            BINARY_NAME=system-i-binary
+            SERVICE_NAME=system_i.service
+            
+            # 1. สร้างโฟลเดอร์ถ้ายังไม่มี
+            sudo mkdir -p $TARGET_PATH
+            
+            # 2. หยุด Service เก่า
+            sudo systemctl stop $SERVICE_NAME || true
+            
+            # 3. Backup Binary เก่า (ถ้ามี)
+            if [ -f "$TARGET_PATH/$BINARY_NAME" ]; then
+              sudo cp $TARGET_PATH/$BINARY_NAME $TARGET_PATH/${BINARY_NAME}.backup.$(date +%Y%m%d_%H%M%S)
+            fi
+            
+      - name: Copy Binary to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: "cmd/server/system-i-binary"
+          target: "/tmp/"
+          strip_components: 2
+          
+      - name: Install and Start Service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            TARGET_PATH=/opt/system_i
+            BINARY_NAME=system-i-binary
+            SERVICE_NAME=system_i.service
+            
+            # 4. ย้ายไฟล์และตั้งค่าสิทธิ์
+            sudo mv /tmp/$BINARY_NAME $TARGET_PATH/$BINARY_NAME
+            sudo chmod +x $TARGET_PATH/$BINARY_NAME
+            sudo chown root:root $TARGET_PATH/$BINARY_NAME
+            
+            # 5. เริ่ม Service ใหม่
+            sudo systemctl daemon-reload
+            sudo systemctl start $SERVICE_NAME
+            sudo systemctl enable $SERVICE_NAME
+            
+            # 6. ตรวจสอบสถานะ
+            sleep 2
+            sudo systemctl status $SERVICE_NAME --no-pager
+            
+            echo "Deployment completed successfully!"

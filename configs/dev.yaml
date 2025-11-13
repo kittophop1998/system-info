@@ -1,0 +1,19 @@
+# Application Configuration
+app:
+  name: "System Info"
+  version: "1.0.0"
+
+# Server Configuration
+server:
+  port: 8080
+  gin_mode: "debug"  # Mode: "debug", "release"
+  log_level: "info"  # Logging level: "debug", "info", "warn", "error"
+
+# Database Configuration (PostgreSQL)
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "password"
+  dbname: "internal_office"
+  sslmode: "disable"
