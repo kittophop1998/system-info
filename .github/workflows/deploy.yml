@@ -24,12 +24,12 @@ jobs:
           cd cmd/server
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o system-i-binary -ldflags="-s -w" .
           
-      - name: Deploy to Server via SSH
+      - name: Deploy to Server via SSH (Preparation)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_KEY }}
+          password: ${{ secrets.SERVER_PASSWORD }} # ใช้ SERVER_PASSWORD แทน SERVER_KEY
           port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
             TARGET_PATH=/opt/system_i
@@ -52,7 +52,7 @@ jobs:
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_KEY }}
+          password: ${{ secrets.SERVER_PASSWORD }} # ใช้ SERVER_PASSWORD แทน SERVER_KEY
           port: ${{ secrets.SERVER_PORT || 22 }}
           source: "cmd/server/system-i-binary"
           target: "/tmp/"
@@ -63,7 +63,7 @@ jobs:
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_KEY }}
+          password: ${{ secrets.SERVER_PASSWORD }} # ใช้ SERVER_PASSWORD แทน SERVER_KEY
           port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
             TARGET_PATH=/opt/system_i
