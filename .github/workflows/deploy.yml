@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build and Deploy Go Service
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5 # ใช้ V5 ล่าสุดเพื่อหลีกเลี่ยงปัญหา Cache/Tar
         with:
           go-version: '1.25'
           
@@ -32,14 +32,13 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
-            TARGET_PATH=/opt/system_i 
+            TARGET_PATH=/opt/system-i
             BINARY_NAME=system-i-binary
-            SERVICE_NAME=system_i.service
+            SERVICE_NAME=system-i.service
             
-            # 1. สร้างโฟลเดอร์ถ้ายังไม่มี
             sudo mkdir -p $TARGET_PATH
             
-            # 2. หยุด Service เก่า
+            # 2. หยุด Service เก่า (|| true เพื่อไม่ให้ Pipeline ล้มเหลวถ้า Service ยังไม่เคยรัน)
             sudo systemctl stop $SERVICE_NAME || true
             
             # 3. Backup Binary เก่า (ถ้ามี)
@@ -52,22 +51,22 @@ jobs:
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }}
+          password: ${{ secrets.SERVER_PASSWORD }} # ใช้ PASSWORD
           port: ${{ secrets.SERVER_PORT || 22 }}
           source: "cmd/server/system-i-binary"
-          target: "/tmp/" 
-          
+          target: "/tmp/"
+      
       - name: Install and Start Service
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }}
+          password: ${{ secrets.SERVER_PASSWORD }} # ใช้ PASSWORD
           port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
-            TARGET_PATH=/opt/system_i
+            TARGET_PATH=/opt/system-i
             BINARY_NAME=system-i-binary
-            SERVICE_NAME=system_i.service
+            SERVICE_NAME=system-i.service
             
             sudo mv /tmp/$BINARY_NAME $TARGET_PATH/$BINARY_NAME
             sudo chmod +x $TARGET_PATH/$BINARY_NAME
