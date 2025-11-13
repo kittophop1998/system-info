@@ -29,10 +29,10 @@ jobs:
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }} # ใช้ SERVER_PASSWORD แทน SERVER_KEY
+          password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
-            TARGET_PATH=/opt/system_i
+            TARGET_PATH=/opt/system_i 
             BINARY_NAME=system-i-binary
             SERVICE_NAME=system_i.service
             
@@ -52,35 +52,31 @@ jobs:
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }} # ใช้ SERVER_PASSWORD แทน SERVER_KEY
+          password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT || 22 }}
           source: "cmd/server/system-i-binary"
-          target: "/tmp/"
-          strip_components: 2
+          target: "/tmp/" 
           
       - name: Install and Start Service
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }} # ใช้ SERVER_PASSWORD แทน SERVER_KEY
+          password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
             TARGET_PATH=/opt/system_i
             BINARY_NAME=system-i-binary
             SERVICE_NAME=system_i.service
             
-            # 4. ย้ายไฟล์และตั้งค่าสิทธิ์
             sudo mv /tmp/$BINARY_NAME $TARGET_PATH/$BINARY_NAME
             sudo chmod +x $TARGET_PATH/$BINARY_NAME
-            sudo chown root:root $TARGET_PATH/$BINARY_NAME
+            sudo chown deployuser:deployuser $TARGET_PATH/$BINARY_NAME 
             
-            # 5. เริ่ม Service ใหม่
             sudo systemctl daemon-reload
             sudo systemctl start $SERVICE_NAME
             sudo systemctl enable $SERVICE_NAME
             
-            # 6. ตรวจสอบสถานะ
             sleep 2
             sudo systemctl status $SERVICE_NAME --no-pager
             
